@@ -1,0 +1,7 @@
+{
+  "name": "Task Hour Tracker",
+  "description": "Professional multi-client tracking, AI receipt parsing, and invoice generation dashboard.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
