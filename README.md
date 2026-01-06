@@ -1,4 +1,4 @@
-# Hour Tracker Chronos
+# Chronos
 
 A professional multi-client time tracking application with AI-powered receipt parsing, invoice generation, and strategic business analytics. Built with Google AI Studio.
 
