@@ -4,21 +4,33 @@
  * 
  * All AI calls are routed through the backend server to protect the API key.
  * The API key is NEVER exposed to the client.
+ * 
+ * Works with:
+ * - Local dev: Express server via Vite proxy (/api/ai/*)
+ * - Netlify: Netlify Functions (/.netlify/functions/ai)
  */
 
 import { WorkRecord, ReceiptRecord, Client, ClientHealth } from "../types";
 
-// API base URL - uses Vite proxy in development
-const API_BASE = '/api/ai';
+// Detect environment and set appropriate API endpoint
+const isNetlify = typeof window !== 'undefined' && 
+  (window.location.hostname.includes('netlify') || 
+   window.location.hostname.includes('.app'));
+
+const API_BASE = isNetlify ? '/.netlify/functions/ai' : '/api/ai';
 
 // Generic fetch wrapper with error handling
-const apiCall = async <T>(endpoint: string, data: object): Promise<T> => {
-  const response = await fetch(`${API_BASE}${endpoint}`, {
+const apiCall = async <T>(action: string, payload: object): Promise<T> => {
+  // For Netlify, send action in body; for local dev, use endpoint path
+  const url = isNetlify ? API_BASE : `${API_BASE}/${action}`;
+  const body = isNetlify ? { action, payload } : payload;
+  
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(data),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
@@ -46,7 +58,7 @@ interface SmartCommandResult {
  * Parse a natural language command using AI
  */
 export const parseSmartCommand = async (command: string, clients: Client[]): Promise<SmartCommandResult> => {
-  return apiCall<SmartCommandResult>('/smart-command', { command, clients });
+  return apiCall<SmartCommandResult>('smart-command', { command, clients });
 };
 
 /**
@@ -57,7 +69,7 @@ export const getStrategicForecast = async (
   receipts: ReceiptRecord[], 
   client: Client
 ): Promise<string> => {
-  const result = await apiCall<{ forecast: string }>('/forecast', { records, receipts, client });
+  const result = await apiCall<{ forecast: string }>('forecast', { records, receipts, client });
   return result.forecast;
 };
 
@@ -69,7 +81,7 @@ export const analyzeClientHealth = async (
   receipts: ReceiptRecord[], 
   clients: Client[]
 ): Promise<ClientHealth[]> => {
-  return apiCall<ClientHealth[]>('/client-health', { records, receipts, clients });
+  return apiCall<ClientHealth[]>('client-health', { records, receipts, clients });
 };
 
 /**
@@ -88,7 +100,7 @@ interface ReceiptParseResult {
  */
 export const parseReceipt = async (base64Image: string): Promise<ReceiptParseResult | null> => {
   try {
-    return await apiCall<ReceiptParseResult>('/parse-receipt', { image: base64Image });
+    return await apiCall<ReceiptParseResult>('parse-receipt', { image: base64Image });
   } catch (error) {
     console.error("Receipt parse error:", error);
     return null;
@@ -100,6 +112,9 @@ export const parseReceipt = async (base64Image: string): Promise<ReceiptParseRes
  */
 export const checkAIHealth = async (): Promise<boolean> => {
   try {
+    // For Netlify, just return true (functions are always available)
+    if (isNetlify) return true;
+    
     const response = await fetch('/api/health');
     const data = await response.json();
     return data.status === 'ok';
@@ -107,4 +122,3 @@ export const checkAIHealth = async (): Promise<boolean> => {
     return false;
   }
 };
-
