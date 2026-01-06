@@ -188,5 +188,3 @@ This project is not production ready and is a hobby-format for hackathon.
 
 
 ---
-
-Built with modern web technologies and powered by Google Gemini AI for intelligent business management. 
