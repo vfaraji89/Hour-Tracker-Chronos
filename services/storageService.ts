@@ -1,15 +1,33 @@
 
-import { WorkRecord, Client, ReceiptRecord } from '../types';
+import { WorkRecord, Client, ReceiptRecord, Task, AppSettings } from '../types';
 
 const RECORDS_KEY = 'task_hour_records_v2';
 const CLIENTS_KEY = 'task_hour_clients_v2';
 const RECEIPTS_KEY = 'task_hour_receipts_v2';
 const ACTIVE_TIMER_KEY = 'task_hour_active_timer_v2';
+const TASKS_KEY = 'task_hour_backlog_v2';
+const SETTINGS_KEY = 'task_hour_settings_v2';
 
 export const storageService = {
+  // Settings
+  saveSettings: (settings: AppSettings) => localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)),
+  getSettings: (): AppSettings => {
+    const defaults: AppSettings = {
+      dailyGoalHours: 8,
+      autoSync: true,
+      userName: 'Operator',
+      theme: 'system'
+    };
+    return JSON.parse(localStorage.getItem(SETTINGS_KEY) || JSON.stringify(defaults));
+  },
+
   // Records
   saveRecords: (records: WorkRecord[]) => localStorage.setItem(RECORDS_KEY, JSON.stringify(records)),
   getRecords: (): WorkRecord[] => JSON.parse(localStorage.getItem(RECORDS_KEY) || '[]'),
+
+  // Tasks
+  saveTasks: (tasks: Task[]) => localStorage.setItem(TASKS_KEY, JSON.stringify(tasks)),
+  getTasks: (): Task[] => JSON.parse(localStorage.getItem(TASKS_KEY) || '[]'),
 
   // Clients
   saveClients: (clients: Client[]) => localStorage.setItem(CLIENTS_KEY, JSON.stringify(clients)),

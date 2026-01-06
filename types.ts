@@ -1,13 +1,20 @@
 
 export type CurrencyCode = 'USD' | 'EUR' | 'TRY';
 
+export interface AppSettings {
+  dailyGoalHours: number;
+  autoSync: boolean;
+  userName: string;
+  theme: 'light' | 'dark' | 'system';
+}
+
 export interface Client {
   id: string;
   name: string;
   hourlyRate: number;
   currency: CurrencyCode;
   color?: string;
-  sheetUrl?: string; // Optional Google Sheets Web App URL for this client
+  sheetUrl?: string;
 }
 
 export interface WorkRecord {
@@ -19,8 +26,17 @@ export interface WorkRecord {
   durationMinutes: number;
   category: string;
   notes: string;
-  location?: string; // System location
-  syncStatus?: 'pending' | 'synced' | 'failed';
+  location?: string;
+  syncStatus?: 'pending' | 'synced' | 'failed' | 'syncing';
+}
+
+export interface Task {
+  id: string;
+  clientId: string;
+  text: string;
+  completed: boolean;
+  priority: 'low' | 'medium' | 'high';
+  createdAt: string;
 }
 
 export interface ReceiptRecord {
@@ -33,15 +49,15 @@ export interface ReceiptRecord {
   notes: string;
   imageUrl?: string;
   isTaxDeductible?: boolean;
-  syncStatus?: 'pending' | 'synced' | 'failed';
+  syncStatus?: 'pending' | 'synced' | 'failed' | 'syncing';
 }
 
 export interface ClientHealth {
   clientId: string;
   name: string;
-  profitability: number; // 0-100
-  stability: number; // 0-100
-  growth: number; // 0-100
+  profitability: number;
+  stability: number;
+  growth: number;
   recommendation: string;
 }
 
@@ -49,5 +65,5 @@ export interface TimerState {
   isRunning: boolean;
   startTime: number | null;
   elapsedSeconds: number;
-  isIdle?: boolean; // New hibernation property
+  isIdle?: boolean;
 }

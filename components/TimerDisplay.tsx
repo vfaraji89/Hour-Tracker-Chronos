@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { motion } from 'framer-motion';
 import { TimerState, WorkRecord } from '../types';
 import { storageService } from '../services/storageService';
@@ -8,25 +8,31 @@ interface TimerDisplayProps {
   onRecordComplete: (record: Partial<WorkRecord>) => void;
 }
 
-const TimerDisplay: React.FC<TimerDisplayProps> = ({ onRecordComplete }) => {
+const TimerDisplay = forwardRef(({ onRecordComplete }: TimerDisplayProps, ref) => {
   const [timer, setTimer] = useState<TimerState>({
     isRunning: false,
     startTime: null,
     elapsedSeconds: 0,
     isIdle: false,
   });
-  const [category, setCategory] = useState('Development');
+  const [category, setCategory] = useState('Deep Work');
   const [notes, setNotes] = useState('');
   
   const intervalRef = useRef<number | null>(null);
   const idleTimeoutRef = useRef<number | null>(null);
-  const IDLE_THRESHOLD = 5 * 60 * 1000; // 5 minutes
+  const IDLE_THRESHOLD = 5 * 60 * 1000;
 
-  // Idle Management
+  // Expose functionality to parent
+  useImperativeHandle(ref, () => ({
+    handleExternalStart: (externalNotes: string) => {
+      setNotes(externalNotes);
+      handleStart(externalNotes);
+    }
+  }));
+
   useEffect(() => {
     const handleActivity = () => {
       if (timer.isRunning && timer.isIdle) {
-        // Resume session: Adjust startTime to skip the idle period
         const now = Date.now();
         const adjustedStartTime = now - (timer.elapsedSeconds * 1000);
         setTimer(prev => ({ ...prev, isIdle: false, startTime: adjustedStartTime }));
@@ -60,11 +66,10 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onRecordComplete }) => {
     const activeSession = storageService.getActiveTimer();
     if (activeSession) {
       const now = Date.now();
-      const elapsedSinceStart = Math.floor((now - activeSession.startTime) / 1000);
       setTimer({
         isRunning: true,
         startTime: activeSession.startTime,
-        elapsedSeconds: elapsedSinceStart,
+        elapsedSeconds: Math.floor((now - activeSession.startTime) / 1000),
         isIdle: false
       });
       setCategory(activeSession.category);
@@ -95,10 +100,11 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onRecordComplete }) => {
     return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  const handleStart = () => {
+  const handleStart = (startNotes?: string) => {
     const startTime = Date.now();
+    const finalNotes = startNotes ?? notes;
     setTimer({ isRunning: true, startTime: startTime, elapsedSeconds: 0, isIdle: false });
-    storageService.saveActiveTimer({ startTime, category, notes });
+    storageService.saveActiveTimer({ startTime, category, notes: finalNotes });
   };
 
   const handleStop = () => {
@@ -119,82 +125,44 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ onRecordComplete }) => {
   };
 
   return (
-    <div className={`vercel-card rounded-xl p-8 shadow-sm overflow-hidden relative transition-opacity duration-500 ${timer.isIdle ? 'opacity-50' : 'opacity-100'}`}>
-      {timer.isRunning && (
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: timer.isIdle ? 0.01 : 0.03 }}
-          className="absolute inset-0 bg-red-600 pointer-events-none"
+    <div className={`text-center space-y-10 transition-opacity duration-500 ${timer.isIdle ? 'opacity-30' : 'opacity-100'}`}>
+      <div className="flex flex-col items-center">
+        <span className={`text-[10px] font-black uppercase tracking-[0.4em] mb-4 ${timer.isRunning ? 'text-red-600' : 'text-gray-300'}`}>
+          {timer.isRunning ? (timer.isIdle ? 'System Hibernating' : 'Protocol Active') : 'System Standby'}
+        </span>
+        <div className={`text-6xl font-black italic tracking-tighter timer-mono ${timer.isRunning ? 'text-black' : 'text-gray-200'}`}>
+          {formatTime(timer.elapsedSeconds)}
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <input 
+          type="text"
+          value={notes}
+          onChange={(e) => {
+            setNotes(e.target.value);
+            if (timer.isRunning && timer.startTime) {
+              storageService.saveActiveTimer({ startTime: timer.startTime, category, notes: e.target.value });
+            }
+          }}
+          placeholder="Objective description..."
+          className="w-full text-center bg-transparent border-b border-gray-100 pb-2 text-xs font-medium outline-none focus:border-black transition-colors"
         />
-      )}
-      
-      <div className="flex justify-between items-center mb-8">
-        <div className="flex flex-col">
-          <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Chronometer</span>
-          {timer.isIdle && (
-            <span className="text-[8px] font-black text-orange-500 uppercase tracking-widest">Hibernating</span>
-          )}
-        </div>
-        {timer.isRunning && (
-          <div className="flex items-center gap-2">
-            <div className={`w-1.5 h-1.5 rounded-full ${timer.isIdle ? 'bg-orange-500' : 'bg-red-600 pulse-dot'}`}></div>
-            <span className={`text-[10px] font-black uppercase tracking-widest ${timer.isIdle ? 'text-orange-500' : 'text-red-600'}`}>
-              {timer.isIdle ? 'Idle' : 'Live'}
-            </span>
-          </div>
-        )}
+        
+        <motion.button 
+          whileTap={{ scale: 0.95 }}
+          onClick={timer.isRunning ? handleStop : () => handleStart()}
+          className={`w-full py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all ${
+            timer.isRunning 
+              ? 'bg-black text-white shadow-2xl' 
+              : 'bg-white vercel-border text-black hover:bg-black hover:text-white hover:border-black'
+          }`}
+        >
+          {timer.isRunning ? 'Stop Cycle' : 'Start Cycle'}
+        </motion.button>
       </div>
-
-      <div className={`text-7xl font-bold timer-mono mb-10 transition-colors ${timer.isRunning ? (timer.isIdle ? 'text-gray-400' : 'text-black') : 'text-gray-200'}`}>
-        {formatTime(timer.elapsedSeconds)}
-      </div>
-      
-      <div className="space-y-6 mb-10">
-        <div>
-          <label className="block text-[8px] font-black text-gray-400 uppercase tracking-widest mb-2">Operation Mode</label>
-          <select 
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            disabled={timer.isRunning}
-            className="w-full bg-white vercel-border rounded-lg px-4 py-3 text-xs font-bold focus:border-black outline-none disabled:bg-gray-50 uppercase tracking-widest"
-          >
-            <option>Development</option>
-            <option>Deep Work</option>
-            <option>Interface Design</option>
-            <option>Strategic Review</option>
-            <option>Consultation</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-[8px] font-black text-gray-400 uppercase tracking-widest mb-2">Session Protocol</label>
-          <input 
-            type="text"
-            value={notes}
-            onChange={(e) => {
-              setNotes(e.target.value);
-              if (timer.isRunning && timer.startTime) {
-                storageService.saveActiveTimer({ startTime: timer.startTime, category, notes: e.target.value });
-              }
-            }}
-            placeholder="Log intent..."
-            className="w-full bg-white vercel-border rounded-lg px-4 py-3 text-xs focus:border-black outline-none font-bold"
-          />
-        </div>
-      </div>
-
-      <motion.button 
-        whileTap={{ scale: 0.97 }}
-        onClick={timer.isRunning ? handleStop : handleStart}
-        className={`w-full py-5 rounded-xl text-xs font-black uppercase tracking-[0.2em] transition-all shadow-xl ${
-          timer.isRunning 
-            ? 'bg-red-600 text-white shadow-red-100 hover:bg-red-700' 
-            : 'bg-black text-white shadow-gray-200 hover:bg-gray-900'
-        }`}
-      >
-        {timer.isRunning ? 'Cease Operation' : 'Initialize Session'}
-      </motion.button>
     </div>
   );
-};
+});
 
 export default TimerDisplay;

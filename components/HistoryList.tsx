@@ -28,7 +28,7 @@ const HistoryList: React.FC<HistoryListProps> = ({ records, onDelete, onUpdate, 
                 <th className="px-6 py-4 font-bold">Category</th>
                 <th className="px-6 py-4 font-bold">Notes</th>
                 <th className="px-6 py-4 font-bold text-center">Duration</th>
-                <th className="px-6 py-4 font-bold text-right">Actions</th>
+                <th className="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -39,6 +39,12 @@ const HistoryList: React.FC<HistoryListProps> = ({ records, onDelete, onUpdate, 
                       {new Date(record.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                       {record.syncStatus === 'synced' && (
                         <i className="fa-solid fa-cloud-check text-green-500 text-[10px]" title="Synced to Drive"></i>
+                      )}
+                      {record.syncStatus === 'syncing' && (
+                        <i className="fa-solid fa-spinner animate-spin text-gray-300 text-[10px]"></i>
+                      )}
+                      {record.syncStatus === 'failed' && (
+                        <i className="fa-solid fa-cloud-exclamation text-red-400 text-[10px]" title="Sync Failed - Click to Retry"></i>
                       )}
                     </div>
                     <span className="block text-[10px] text-gray-400 font-mono mt-0.5">{record.startTime} – {record.endTime}</span>
