@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { motion } from 'framer-motion';
 import { AppSettings } from '../types';
 
 interface SettingsProps {
@@ -47,9 +46,9 @@ const Settings: React.FC<SettingsProps> = ({ settings, onUpdate, onClearData, on
               onClick={() => onUpdate({ ...settings, autoSync: !settings.autoSync })}
               className={`w-12 h-6 rounded-full relative transition-colors ${settings.autoSync ? 'bg-black' : 'bg-gray-200'}`}
             >
-              <motion.div 
-                animate={{ x: settings.autoSync ? 24 : 4 }}
-                className="absolute top-1 left-0 w-4 h-4 bg-white rounded-full shadow-sm"
+              <div 
+                className="absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-all duration-200"
+                style={{ left: settings.autoSync ? '24px' : '4px' }}
               />
             </button>
           </div>

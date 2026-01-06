@@ -1,95 +1,110 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
+/**
+ * Gemini AI Service - Secure Backend Proxy
+ * 
+ * All AI calls are routed through the backend server to protect the API key.
+ * The API key is NEVER exposed to the client.
+ */
+
 import { WorkRecord, ReceiptRecord, Client, ClientHealth } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// API base URL - uses Vite proxy in development
+const API_BASE = '/api/ai';
 
-export const parseSmartCommand = async (command: string, clients: Client[]): Promise<any> => {
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
-    contents: `You are an AI assistant for Chronos, a work tracker. 
-    Available clients: ${clients.map(c => c.name).join(', ')}. 
-    Available actions: 'work' (log time), 'expense' (log money), 'sync' (sync pending), 'report' (summary), 'fix' (polish notes).
-    Command: "${command}"`,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          type: { type: Type.STRING, description: "One of: work, expense, sync, report, fix" },
-          clientName: { type: Type.STRING },
-          amount: { type: Type.NUMBER },
-          durationMinutes: { type: Type.NUMBER },
-          notes: { type: Type.STRING },
-          category: { type: Type.STRING },
-          message: { type: Type.STRING, description: "A friendly status message about what was done" }
-        }
-      }
-    }
+// Generic fetch wrapper with error handling
+const apiCall = async <T>(endpoint: string, data: object): Promise<T> => {
+  const response = await fetch(`${API_BASE}${endpoint}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
   });
-  return JSON.parse(response.text);
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+    throw new Error(error.message || error.error || `API error: ${response.status}`);
+  }
+
+  return response.json();
 };
 
-export const getStrategicForecast = async (records: WorkRecord[], receipts: ReceiptRecord[], client: Client): Promise<string> => {
-  const data = JSON.stringify({ records: records.slice(-20), receipts: receipts.slice(-10) });
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
-    contents: `You are a CFO. Based on this work/expense data for client ${client.name}, predict the total revenue for the end of this month. Identify the biggest 'profit killer' and give 1 strategic move to increase margins. Data: ${data}`,
-  });
-  return response.text;
+/**
+ * Smart command interface result type
+ */
+interface SmartCommandResult {
+  type: 'work' | 'expense' | 'sync' | 'report' | 'fix';
+  clientName?: string;
+  amount?: number;
+  durationMinutes?: number;
+  notes?: string;
+  category?: string;
+  message?: string;
+}
+
+/**
+ * Parse a natural language command using AI
+ */
+export const parseSmartCommand = async (command: string, clients: Client[]): Promise<SmartCommandResult> => {
+  return apiCall<SmartCommandResult>('/smart-command', { command, clients });
 };
 
-export const analyzeClientHealth = async (records: WorkRecord[], receipts: ReceiptRecord[], clients: Client[]): Promise<ClientHealth[]> => {
-  const response = await ai.models.generateContent({
-    model: 'gemini-3-flash-preview',
-    contents: `Analyze the profitability of these clients. Compare hours worked vs expenses incurred. Return a JSON array of health metrics (0-100) for each. Clients: ${JSON.stringify(clients)} Records: ${JSON.stringify(records.slice(-50))} Expenses: ${JSON.stringify(receipts.slice(-50))}`,
-    config: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.ARRAY,
-        items: {
-          type: Type.OBJECT,
-          properties: {
-            clientId: { type: Type.STRING },
-            name: { type: Type.STRING },
-            profitability: { type: Type.NUMBER },
-            stability: { type: Type.NUMBER },
-            growth: { type: Type.NUMBER },
-            recommendation: { type: Type.STRING }
-          }
-        }
-      }
-    }
-  });
-  return JSON.parse(response.text);
+/**
+ * Get strategic business forecast
+ */
+export const getStrategicForecast = async (
+  records: WorkRecord[], 
+  receipts: ReceiptRecord[], 
+  client: Client
+): Promise<string> => {
+  const result = await apiCall<{ forecast: string }>('/forecast', { records, receipts, client });
+  return result.forecast;
 };
 
-export const parseReceipt = async (base64Image: string): Promise<any> => {
+/**
+ * Analyze client health and profitability
+ */
+export const analyzeClientHealth = async (
+  records: WorkRecord[], 
+  receipts: ReceiptRecord[], 
+  clients: Client[]
+): Promise<ClientHealth[]> => {
+  return apiCall<ClientHealth[]>('/client-health', { records, receipts, clients });
+};
+
+/**
+ * Receipt parsing result type
+ */
+interface ReceiptParseResult {
+  amount: number;
+  vendor: string;
+  date: string;
+  category?: string;
+  isTaxDeductible?: boolean;
+}
+
+/**
+ * Parse a receipt image using AI vision
+ */
+export const parseReceipt = async (base64Image: string): Promise<ReceiptParseResult | null> => {
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: [
-        { inlineData: { mimeType: 'image/jpeg', data: base64Image.split(',')[1] || base64Image } },
-        { text: "Extract details into JSON: total amount, vendor, date (YYYY-MM-DD), category, and 'isTaxDeductible' (boolean)." }
-      ],
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            amount: { type: Type.NUMBER },
-            vendor: { type: Type.STRING },
-            date: { type: Type.STRING },
-            category: { type: Type.STRING },
-            isTaxDeductible: { type: Type.BOOLEAN }
-          },
-          required: ["amount", "vendor", "date"]
-        }
-      }
-    });
-    return JSON.parse(response.text);
+    return await apiCall<ReceiptParseResult>('/parse-receipt', { image: base64Image });
   } catch (error) {
-    console.error("Parse Error:", error);
+    console.error("Receipt parse error:", error);
     return null;
   }
 };
+
+/**
+ * Check if the AI backend is available
+ */
+export const checkAIHealth = async (): Promise<boolean> => {
+  try {
+    const response = await fetch('/api/health');
+    const data = await response.json();
+    return data.status === 'ok';
+  } catch {
+    return false;
+  }
+};
+

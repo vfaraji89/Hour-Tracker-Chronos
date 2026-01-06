@@ -8,11 +8,19 @@ export default defineConfig(({ mode }) => {
       server: {
         port: 3000,
         host: '0.0.0.0',
+        // Proxy API requests to backend server
+        proxy: {
+          '/api': {
+            target: 'http://localhost:3001',
+            changeOrigin: true,
+            secure: false
+          }
+        }
       },
       plugins: [react()],
+      // Remove API key from client bundle - it's now server-side only
       define: {
-        'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
+        'process.env.NODE_ENV': JSON.stringify(mode)
       },
       resolve: {
         alias: {
