@@ -78,17 +78,19 @@ Every structured output call uses `responseMimeType: "application/json"` with a 
 
 **Google Sheets sync reliability.** Apps Script web apps have cold start latency and occasional timeout issues. We implemented per-record sync status tracking (pending, syncing, synced, failed) with retry capabilities and a bulk sync function, so users never lose data even if individual sync attempts fail.
 
-## Accomplishments We Are Proud Of
+## Our Solutions
 
-- The natural language command bar genuinely works as a replacement for traditional UI forms. In testing, logging time through the command bar is 3-4x faster than clicking through timer start/stop flows.
+- The natural language command bar genuinely works as a replacement for traditional UI forms.
+- In testing, logging time through the command bar is 3-4x faster than clicking through timer start/stop flows.
 - Receipt scanning accuracy is high enough to be useful in practice. Gemini 3 Flash correctly extracts amount, vendor, and date from most standard receipts on the first attempt.
-- The client health analysis produces genuinely differentiated recommendations per client, not generic advice. It considers the ratio of hours worked to expenses incurred and identifies specific patterns.
-- The entire application works offline (except AI features) because all core data is in LocalStorage. Cloud sync is additive, not required.
+- The entire application works offline (except AI features) because all core data can be stored in LocalStorage.
+- Cloud sync is additive, not required.
 
 ## What We Learned
 
 - Gemini 3's structured output with `responseSchema` is a significant improvement over prompt-based JSON extraction. It eliminates an entire class of parsing bugs.
-- The Flash vs. Pro distinction is not just about cost -- it maps to fundamentally different user experience patterns. Flash enables conversational, real-time interactions. Pro enables analytical, report-style outputs. Designing the UI around these different interaction patterns matters.
+- The Flash vs. Pro distinction is not just about cost -- it maps to fundamentally different user experience patterns. Flash enables conversational, real-time interactions.
+- Pro enables analytical, report-style outputs. Designing the UI around these different interaction patterns matters.
 - For freelancer tools, data isolation per client is not optional. It is a trust requirement. The per-client Google Sheets architecture reflects this.
 
 ## What Is Next for Chronos
@@ -112,29 +114,6 @@ Every structured output call uses `responseMimeType: "application/json"` with a 
 | Deploy | Netlify |
 | Languages | English, Turkish (full i18n) |
 
-## Run Locally
-
-**Prerequisites:** Node.js 16+
-
-```bash
-git clone https://github.com/vfaraji89/Hour-Tracker-Chronos.git
-cd Hour-Tracker-Chronos
-npm install
-```
-
-Create a `.env.local` file:
-
-```
-GEMINI_API_KEY=your_api_key_here
-```
-
-Get a free API key from [Google AI Studio](https://aistudio.google.com/apikey).
-
-```bash
-npm run dev
-```
-
-Open `http://localhost:3000`.
 
 ## Project Structure
 
