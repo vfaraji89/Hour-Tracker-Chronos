@@ -1,6 +1,6 @@
 {
-  "name": "Task Hour Tracker",
-  "description": "Professional multi-client tracking, AI receipt parsing, and invoice generation dashboard.",
+  "name": "Mesa — İş Defteri",
+  "description": "Çalışma saatleri tek komutla takip et",
   "requestFramePermissions": [
     "camera"
   ]

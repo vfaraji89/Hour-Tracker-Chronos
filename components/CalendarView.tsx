@@ -1,14 +1,17 @@
 
 import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { WorkRecord } from '../types';
+// Import Locale to fix property missing error
+import { WorkRecord, Locale } from '../types';
 import { storageService } from '../services/storageService';
 
 interface CalendarViewProps {
   records: WorkRecord[];
+  // Added language to props interface
+  language: Locale;
 }
 
-const CalendarView: React.FC<CalendarViewProps> = ({ records }) => {
+const CalendarView: React.FC<CalendarViewProps> = ({ records, language }) => {
   const [hoveredDay, setHoveredDay] = useState<number | null>(null);
   const settings = storageService.getSettings();
   
@@ -107,7 +110,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ records }) => {
         <div className="flex justify-between items-end border-b border-gray-100 pb-4">
           <div>
             <h3 className="text-xl font-black tracking-tighter">
-              {new Date(year, month).toLocaleString('default', { month: 'long', year: 'numeric' })}
+              {new Date(year, month).toLocaleString(language === 'tr' ? 'tr-TR' : 'en-US', { month: 'long', year: 'numeric' })}
             </h3>
             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Temporal Heatmap Analysis</p>
           </div>

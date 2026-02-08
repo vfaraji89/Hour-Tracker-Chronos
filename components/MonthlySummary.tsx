@@ -1,12 +1,16 @@
+
 import React, { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { WorkRecord } from '../types';
+// Import Locale to fix property missing error
+import { WorkRecord, Locale } from '../types';
 
 interface MonthlySummaryProps {
   records: WorkRecord[];
+  // Added language to props interface
+  language: Locale;
 }
 
-const MonthlySummary: React.FC<MonthlySummaryProps> = ({ records }) => {
+const MonthlySummary: React.FC<MonthlySummaryProps> = ({ records, language }) => {
   const chartData = useMemo(() => {
     const monthlyGroups: Record<string, number> = {};
     const now = new Date();
@@ -23,10 +27,11 @@ const MonthlySummary: React.FC<MonthlySummaryProps> = ({ records }) => {
     });
     return Object.entries(monthlyGroups).map(([month, hours]) => {
       const [year, m] = month.split('-');
-      const dateLabel = new Date(parseInt(year), parseInt(m) - 1).toLocaleDateString(undefined, { month: 'short' });
+      // Correctly localized date label using passed language
+      const dateLabel = new Date(parseInt(year), parseInt(m) - 1).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US', { month: 'short' });
       return { name: dateLabel, hours: parseFloat(hours.toFixed(1)) };
     });
-  }, [records]);
+  }, [records, language]);
 
   const currentMonthStats = useMemo(() => {
     const now = new Date();

@@ -1,28 +1,30 @@
 
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { motion } from 'framer-motion';
-import { TimerState, WorkRecord } from '../types';
+import { TimerState, WorkRecord, Locale } from '../types';
 import { storageService } from '../services/storageService';
+import { translations } from '../translations';
 
 interface TimerDisplayProps {
   onRecordComplete: (record: Partial<WorkRecord>) => void;
+  language: Locale;
 }
 
-const TimerDisplay = forwardRef(({ onRecordComplete }: TimerDisplayProps, ref) => {
+const TimerDisplay = forwardRef(({ onRecordComplete, language }: TimerDisplayProps, ref) => {
   const [timer, setTimer] = useState<TimerState>({
     isRunning: false,
     startTime: null,
     elapsedSeconds: 0,
     isIdle: false,
   });
-  const [category, setCategory] = useState('Deep Work');
+  const t = translations[language];
+  const [category, setCategory] = useState(language === 'tr' ? 'Derin Çalışma' : 'Deep Work');
   const [notes, setNotes] = useState('');
   
   const intervalRef = useRef<number | null>(null);
   const idleTimeoutRef = useRef<number | null>(null);
   const IDLE_THRESHOLD = 5 * 60 * 1000;
 
-  // Expose functionality to parent
   useImperativeHandle(ref, () => ({
     handleExternalStart: (externalNotes: string) => {
       setNotes(externalNotes);
@@ -38,26 +40,18 @@ const TimerDisplay = forwardRef(({ onRecordComplete }: TimerDisplayProps, ref) =
         setTimer(prev => ({ ...prev, isIdle: false, startTime: adjustedStartTime }));
         storageService.saveActiveTimer({ startTime: adjustedStartTime, category, notes });
       }
-
       if (idleTimeoutRef.current) window.clearTimeout(idleTimeoutRef.current);
-      
       if (timer.isRunning && !timer.isIdle) {
         idleTimeoutRef.current = window.setTimeout(() => {
           setTimer(prev => ({ ...prev, isIdle: true }));
         }, IDLE_THRESHOLD);
       }
     };
-
     window.addEventListener('mousemove', handleActivity);
     window.addEventListener('keydown', handleActivity);
-    window.addEventListener('mousedown', handleActivity);
-    window.addEventListener('scroll', handleActivity);
-
     return () => {
       window.removeEventListener('mousemove', handleActivity);
       window.removeEventListener('keydown', handleActivity);
-      window.removeEventListener('mousedown', handleActivity);
-      window.removeEventListener('scroll', handleActivity);
       if (idleTimeoutRef.current) window.clearTimeout(idleTimeoutRef.current);
     };
   }, [timer.isRunning, timer.isIdle, timer.elapsedSeconds, category, notes]);
@@ -125,17 +119,22 @@ const TimerDisplay = forwardRef(({ onRecordComplete }: TimerDisplayProps, ref) =
   };
 
   return (
-    <div className={`text-center space-y-10 transition-opacity duration-500 ${timer.isIdle ? 'opacity-30' : 'opacity-100'}`}>
+    <div className={`text-center space-y-12 transition-all duration-700 ${timer.isIdle ? 'grayscale opacity-20' : 'opacity-100'}`}>
       <div className="flex flex-col items-center">
-        <span className={`text-[10px] font-black uppercase tracking-[0.4em] mb-4 ${timer.isRunning ? 'text-red-600' : 'text-gray-300'}`}>
-          {timer.isRunning ? (timer.isIdle ? 'System Hibernating' : 'Protocol Active') : 'System Standby'}
-        </span>
-        <div className={`text-6xl font-black italic tracking-tighter timer-mono ${timer.isRunning ? 'text-black' : 'text-gray-200'}`}>
+        <div className="flex items-center gap-3 mb-6">
+          <span className={`material-symbols-outlined !text-lg ${timer.isRunning ? 'text-red-600 animate-pulse' : 'text-gray-300'}`}>
+            {timer.isRunning ? 'radio_button_checked' : 'radio_button_unchecked'}
+          </span>
+          <span className={`text-[11px] font-black uppercase tracking-[0.4em] ${timer.isRunning ? 'text-black' : 'text-gray-300'}`}>
+            {timer.isRunning ? (timer.isIdle ? t.timer.suspended : t.timer.tracking) : t.timer.inactive}
+          </span>
+        </div>
+        <div className={`text-8xl font-black italic tracking-tighter timer-mono leading-none ${timer.isRunning ? 'text-black' : 'text-gray-200'}`}>
           {formatTime(timer.elapsedSeconds)}
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="max-w-md mx-auto space-y-8">
         <input 
           type="text"
           value={notes}
@@ -145,20 +144,23 @@ const TimerDisplay = forwardRef(({ onRecordComplete }: TimerDisplayProps, ref) =
               storageService.saveActiveTimer({ startTime: timer.startTime, category, notes: e.target.value });
             }
           }}
-          placeholder="Objective description..."
-          className="w-full text-center bg-transparent border-b border-gray-100 pb-2 text-xs font-medium outline-none focus:border-black transition-colors"
+          placeholder={t.timer.objective}
+          className="w-full text-center bg-transparent border-b-2 border-gray-50 pb-4 text-sm font-bold outline-none focus:border-black transition-all placeholder:text-gray-100"
         />
         
         <motion.button 
-          whileTap={{ scale: 0.95 }}
+          whileTap={{ scale: 0.96 }}
           onClick={timer.isRunning ? handleStop : () => handleStart()}
-          className={`w-full py-6 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] transition-all ${
+          className={`w-full py-8 rounded-[32px] text-xs font-black uppercase tracking-[0.4em] transition-all flex items-center justify-center gap-4 ${
             timer.isRunning 
               ? 'bg-black text-white shadow-2xl' 
               : 'bg-white vercel-border text-black hover:bg-black hover:text-white hover:border-black'
           }`}
         >
-          {timer.isRunning ? 'Stop Cycle' : 'Start Cycle'}
+          <span className="material-symbols-outlined !text-xl">
+            {timer.isRunning ? 'stop' : 'play_arrow'}
+          </span>
+          {timer.isRunning ? t.timer.terminate : t.timer.initialize}
         </motion.button>
       </div>
     </div>

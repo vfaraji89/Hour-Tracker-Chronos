@@ -1,11 +1,14 @@
 
 export type CurrencyCode = 'USD' | 'EUR' | 'TRY';
+export type Locale = 'tr' | 'en';
 
 export interface AppSettings {
   dailyGoalHours: number;
   autoSync: boolean;
   userName: string;
   theme: 'light' | 'dark' | 'system';
+  isDemoMode?: boolean;
+  language: Locale;
 }
 
 export interface Client {
