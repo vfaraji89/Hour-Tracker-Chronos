@@ -1,6 +1,6 @@
 {
-  "name": "Mesa — İş Defteri",
-  "description": "Çalışma saatleri tek komutla takip et",
+  "name": "MESA CHRONOS",
+  "description": "Profesyonel iş takibi ve stratejik zaman yönetimi platformu.",
   "requestFramePermissions": [
     "camera"
   ]

@@ -341,7 +341,7 @@ const App: React.FC = () => {
               <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center transition-transform group-hover:scale-105">
                 <div className="w-2.5 h-2.5 bg-white rounded-full"></div>
               </div>
-              <span className="font-black text-xl tracking-tighter uppercase italic">MESA</span>
+              <span className="font-black text-xl tracking-tighter uppercase italic">MESA CHRONOS</span>
             </div>
             
             <nav className="hidden xl:flex items-center gap-8">
@@ -512,7 +512,7 @@ const App: React.FC = () => {
             <span className="material-symbols-outlined !text-sm">public</span>
             {systemLocation}
           </span>
-          <span className="bg-gray-100 px-4 py-2 rounded-lg text-black">Mesa Build 3.6.5</span>
+          <span className="bg-gray-100 px-4 py-2 rounded-lg text-black">MESA CHRONOS Build 3.7.0</span>
         </div>
       </footer>
     </div>
